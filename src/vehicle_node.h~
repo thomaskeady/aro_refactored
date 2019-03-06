@@ -199,12 +199,20 @@ public:
 				}
 				else if (teensy_signal_count == teensy_signal_confirmation_num)
 				{
+					teensy_signal_count = 0;
+
+					ROS_INFO("Switching to state 2");
 					STATE = 2;
 					toTeensy.data = 2;
 					teensy_state_pub.publish(toTeensy);
 					// NOW RUN DYNAMIXEL METHOD TO MOVE REEL?? TODO 
 					// If so, you'll also change to STATE 3 after that happens, should that all be here?
-					teensy_signal_count = 0;
+
+					ROS_INFO("Switching to state 3");
+					STATE = 3;
+					toTeensy.data = 3;
+					teensy_state_pub.publish(toTeensy);
+
 				}
 				else 
 				{
@@ -218,9 +226,35 @@ public:
 				break;
 			case 3 :
 				// Here we want 3 signals before we consider comms good
+
+				// Once we get all 3 signals, change state and reset counter
+				if (teensy_signal_count < teensy_signal_confirmation_num) 
+				{
+					++teensy_signal_count;
+				}
+				else if (teensy_signal_count == teensy_signal_confirmation_num)
+				{
+					ROS_INFO("Switching to state 4");
+					STATE = 4;
+					toTeensy.data = 4;
+					teensy_state_pub.publish(toTeensy);
+					// Now the teensy should start sending data to the teensy_data topic
+					teensy_signal_count = 0;
+				}
+				else 
+				{
+					ROS_WARN("teensy_signal_count is %d, STATE %d", teensy_signal_count, STATE);
+				}
+
 				break;
 			case 4 :
-				
+				// This means the teensy is done sending data
+				// Write bag file or something? Report up to whoever started collection?
+				ROS_INFO("Done receiving data from teensy, returning to idle state (0)");
+				STATE = 0;
+				toTeensy.data = 0;
+				teensy_state_pub.publish(toTeensy);
+
 				break;
 			
 		}
@@ -230,7 +264,7 @@ public:
 	// Need to change this to custom message type
 	void teensyDataCb(const std_msgs::Empty& msg)
 	{
-		
+		ROS_INFO("Received data message from Teensy");
 	}
 
 	// How everything gets started
@@ -242,7 +276,8 @@ public:
 		{
 			ROS_INFO("Starting data collection process");
 			STATE = 1;
-			teensy_state_pub.publish(1); // Switch the teensy to state 1
+			toTeensy.data = 1;
+			teensy_state_pub.publish(toTeensy); // Switch the teensy to state 1
 
 		} else {
 			ROS_WARN("STATE is %d, not changing", STATE);
