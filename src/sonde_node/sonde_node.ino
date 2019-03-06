@@ -90,28 +90,47 @@ void loop() {
   {
     case 0 : 
       // Idle state, put a non-busy wait here
-      Serial.println("Chilling (state 0)");
+      Serial.println("(state 0) Chilling");
       delay(1000);
       
       break;
     case 1 : 
       // Sending heartbeats for testing comms
-      Serial.println("Sending hb");
+      Serial.println("(state 1) Sending hb");
       teensy_signal_pub.publish(&sig); // Change sig to something first? Value to indicate heartbeat? May help with debugging
       delay(500);
 
       break;
     case 2 : 
       // Start collecting data! Repeat until another signal arrives 
-      Serial.println("Pretending to collect data brb");
+      Serial.println("(state 2) Pretending to collect data brb");
       delay(250);
       
       break;
     case 3 : 
-
+      // Sending heartbeats for testing comms
+      Serial.println("(state 3) Sending hb");
+      teensy_signal_pub.publish(&sig); // Change sig to something first? Value to indicate heartbeat? May help with debugging
+      delay(500);
+      
       break;
     case 4 : 
+      // Send data
+      Serial.println("(state 4) Sending data");
+      teensy_data_pub.publish(&data_msg);
+      delay(50);
+      teensy_data_pub.publish(&data_msg);
+      delay(50);
+      teensy_data_pub.publish(&data_msg);
+      delay(50);
 
+      // When done sending data, inform nuc
+      Serial.println("(state 4) Informing Nuc data transmission complete");
+      teensy_signal_pub.publish(&sig);
+
+      // Change own state back to 0 i guess? // Actually nuc does it too, is redundant, choose one TODO
+      Serial.println("(state 4) returning self to idle state");
+      STATE = 0;
       break;
       
   }
