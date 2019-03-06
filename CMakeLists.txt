@@ -10,7 +10,7 @@ project(aro_refactored)
 find_package(catkin REQUIRED COMPONENTS
   dynamixel_controllers
   message_generation
-  message_runtime
+  message_runtime # aro_ft doesnt have this... why?
   rosbag
   roscpp
   rospy
@@ -141,7 +141,7 @@ include_directories(
 
 add_executable(vehicle_node src/vehicle_node.cpp)
 target_link_libraries(vehicle_node ${catkin_LIBRARIES})
-#add_dependencies(vehicle_side aro_refactored_gencpp)
+#add_dependencies(vehicle_side aro_refactored_gencpp) # What does this do??
 
 
 ## Rename C++ executable without prefix
