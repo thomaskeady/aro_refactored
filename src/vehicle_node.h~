@@ -5,6 +5,7 @@
 //#include "aro_ft/aro_ft.h"
 #include <std_msgs/Empty.h>
 #include <std_msgs/Int32.h>
+#include <std_msgs/Float32.h>
 #include "dynamixel_controllers/SetSpeed.h"
 #include "dynamixel_msgs/JointState.h"
 
@@ -97,13 +98,42 @@ class DynamixelClient {
 
 
 
+/*
+
+States:
+0: Idle 
+	- move to 1 if begin_collection message
+
+1: Checking comms with teensy
+	- move to 2 if 3 msgs (in a row? TODO) else, ? retry?
+
+2: Collect data 
+	- msg the teensy to start collecting
+	- lower reel, pause, pull up reel
+	- move to 3
+
+3: Check comms with teensy
+	- move to 4 if 3 msgs (in a row? TODO) else, ? retry?
+	- Similar enough to state 1 to combine?
+	
+4: Collect data
+	- msg teensy to start sending, start listening on collected_data topic
+	- when done (will receive stop signal from teensy? TODO) move to 0 (idle)
+
+
+Each time the Nuc's state changes, send a message on teensy_state to change the teensy's state too (some are explicitly mentioned above)
+
+
+ */
 class CollectDataStateMachine 
 {
 
 private:
 	ros::NodeHandle &nh_;
 	rosbag::Bag bag;
-	
+	int STATE;
+	float depth;
+	bool torque_sensing;
 
 	// Publishers
 	ros::Publisher teensy_state_pub;
@@ -111,7 +141,7 @@ private:
 	// Subscribers
 	ros::Subscriber teensy_signal_sub;
 	ros::Subscriber teensy_data_sub;
-
+	ros::Subscriber begin_collection_sub;
 
 	DynamixelClient dynamixel;
 
@@ -120,13 +150,17 @@ public:
 	CollectDataStateMachine(ros::NodeHandle &nh) :
 		nh_(nh),
 		bag("collected_data.bag", rosbag::bagmode::Write),
+		STATE(0),
+		depth(0.0),
+		torque_sensing(false), // Change this here for now
 
 		// Publishers
-		teensy_state_pub(nh_.advertise<>("teensy_state", 10)),
+		teensy_state_pub(nh_.advertise<std_msgs::Int32>("teensy_state", 10)),
 
 		// Subscribers
 		teensy_signal_sub(nh_.subscribe("teensy_signal", 10, &CollectDataStateMachine::teensySignalCb, this)),
 		teensy_data_sub(nh.subscribe("teensy_data", 10, &CollectDataStateMachine::teensyDataCb, this)),
+		begin_collection_sub(nh.subscribe("begin_collection", 10, &CollectDataStateMachine::beginCollectionCb, this)),
 
 
 
@@ -136,15 +170,46 @@ public:
 		// pass for now
 	}
 	
-
+	/* How we hear back from the teensy
+	 * 
+	 */
 	void teensySignalCb(const std_msgs::Int32& msg)
 	{
 		
+		switch(STATE)
+		{
+			case 0 :
+				
+			case 1 :
+				
+			case 2 :
+				
+
+			
+			
+		}
+
 	}
 
 	// Need to change this to custom message type
 	void teensyDataCb(const std_msgs::Empty& msg)
 	{
+		
+	}
+
+	// How everything gets started
+	void beginCollectionCb(const std_msgs::Float32& msg)
+	{
+		depth = msg.data;
+		
+		if (STATE == 0) 
+		{
+			ROS_INFO("Starting data collection process");
+				
+		} else {
+			ROS_WARN("STATE is %d, not changing", STATE);
+		
+		}
 		
 	}
 
