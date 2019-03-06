@@ -4,7 +4,7 @@
 #include <stdlib.h>
 //#include "aro_ft/aro_ft.h"
 #include <std_msgs/Empty.h>
-#include <std_msgs/Float32.h>
+#include <std_msgs/Int32.h>
 #include "dynamixel_controllers/SetSpeed.h"
 #include "dynamixel_msgs/JointState.h"
 
@@ -97,7 +97,60 @@ class DynamixelClient {
 
 
 
+class CollectDataStateMachine 
+{
 
+private:
+	ros::NodeHandle &nh_;
+	rosbag::Bag bag;
+	
+
+	// Publishers
+	ros::Publisher teensy_state_pub;
+
+	// Subscribers
+	ros::Subscriber teensy_signal_sub;
+	ros::Subscriber teensy_data_sub;
+
+
+	DynamixelClient dynamixel;
+
+
+public:
+	CollectDataStateMachine(ros::NodeHandle &nh) :
+		nh_(nh),
+		bag("collected_data.bag", rosbag::bagmode::Write),
+
+		// Publishers
+		teensy_state_pub(nh_.advertise<std_msgs::Int32>("teensy_state", 10)),
+
+		// Subscribers
+		teensy_signal_sub(nh_.subscribe("teensy_signal", 10, &CollectDataStateMachine::teensySignalCb, this)),
+		teensy_data_sub(nh.subscribe("teensy_data", 10, &CollectDataStateMachine::teensyDataCb, this)),
+
+
+
+		dynamixel(nh_, 5.0, 0.0, 5.0) // 3rd param "desired_depth" 0.0 by default for now
+
+	{
+		// pass for now
+	}
+	
+
+	void teensySignalCb(const std_msgs::Int32& msg)
+	{
+		
+	}
+
+	// Need to change this to custom message type
+	void teensyDataCb(const std_msgs::Empty& msg)
+	{
+		
+	}
+
+
+
+};
 
 
 
