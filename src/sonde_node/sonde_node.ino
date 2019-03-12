@@ -1,7 +1,5 @@
 #define USE_TEENSY_HW_SERIAL
 
-#define MAX_NUM_MSGS 500
-
 #include <ros.h>
 #include <ros/time.h>
 //#include <aro_ft/aro_ft.h>
@@ -12,13 +10,31 @@
 #include "bar30.h"
 #include <Wire.h>
 
+#include <aro_refactored/sample.h>
+
+
 ros::NodeHandle nh;
 
 // Messages
-std_msgs::Int32 sig;
-//aro_refactored:: data_msg; // Need to add custom messages here TODO 
+std_msgs::Int32 sig; 
 std_msgs::Empty data_msg;
 
+//aro_refactored:: data_msg; // Need to add custom messages here TODO
+//aro_ft::aro_ft buffMsg;
+//aro_ft::aro_ft msgArray[MAX_NUM_MSGS];
+
+// Message sizing parameters
+const int MAX_MSG_SIZE = 1; // Max # of messages that get sent at once, will make this bigger (currently for testing)
+const int MAX_NUM_MSGS = 500; // Just so we can preallocate, can do this more smartly if necessary 
+
+aro_refactored::sample samples[MAX_NUM_MSGS];
+int currMsgSize = 0;
+int numMsgs = 0;
+
+ros::Time stampBuffer[MAX_MSG_SIZE];
+float dissolvedOxygenBuffer[MAX_MSG_SIZE];
+float waterTempBuffer[MAX_MSG_SIZE];
+float depthBuffer[MAX_MSG_SIZE];
 
 int STATE;
 
@@ -79,6 +95,11 @@ void setup() {
 }
 
 
+String rawString;
+float temp;
+float DO;
+String tempString;
+String doString;
 
 
 void loop() {
@@ -91,7 +112,7 @@ void loop() {
     case 0 : 
       // Idle state, put a non-busy wait here
       Serial.println("(state 0) Chilling");
-      delay(1000);
+      delay(1000); 
       
       break;
     case 1 : 
@@ -103,8 +124,57 @@ void loop() {
       break;
     case 2 : 
       // Start collecting data! Repeat until another signal arrives 
-      Serial.println("(state 2) Pretending to collect data brb");
-      delay(250);
+      //Serial.println("(state 2) Pretending to collect data brb");
+      //delay(250);
+      
+      Serial2.write("?01,PVAL,,\r\n");
+      //rawString = Serial3.readString();
+      //rawString format: "=01,PVAL,24.173,271.62,"
+  
+      // For testing without Sonde:
+      rawString = "=01,PVAL,24.173,271.62,";
+      delay(250); // Change this number to simulate smapling delay
+  
+      //bar30.read();
+      tempString = rawString.substring(9,15);
+      doString = rawString.substring(16,22);
+      temp = tempString.toFloat();
+      DO = doString.toFloat();
+  
+      //samples[numMsgs].stamp[currMsgSize++];
+      //samples[numMsgs].stamp.push_back(nh.now());   // Not a std container *eye roll*
+  
+      stampBuffer[currMsgSize] = nh.now();
+      dissolvedOxygenBuffer[currMsgSize] = DO;
+      waterTempBuffer[currMsgSize] = temp;
+      depthBuffer[currMsgSize] = 0;//bar30.depth();
+      ++currMsgSize;
+
+      if (currMsgSize == MAX_MSG_SIZE) 
+      {
+        Serial.println("Copying to message array, creating new message");
+        
+        currMsgSize = 0;
+        
+        // Now add them to the array of sample messages for the Nuc
+        samples[numMsgs].stamp = stampBuffer;
+        samples[numMsgs].dissolvedOxygen = dissolvedOxygenBuffer;
+        samples[numMsgs].waterTemp = waterTempBuffer;
+        samples[numMsgs].depth = depthBuffer;
+        // TODO will this add non-trivial delay to the sampling? Does that matter?
+        // TODO will these need to be cleared now?
+        
+        ++numMsgs;
+        
+        if (numMsgs == MAX_NUM_MSGS) 
+        {
+          //numMsgs = 0; // Too many samples, stop collecting and add something smart to keep ROS messaging working
+          Serial.println("************ \n\nUh oh! \n\n************");
+        }
+      
+      }
+      Serial.println(numMsgs);
+
       
       break;
     case 3 : 
@@ -123,6 +193,7 @@ void loop() {
       delay(50);
       teensy_data_pub.publish(&data_msg);
       delay(50);
+      // Dont forget to clear the data array!! TODO
 
       // When done sending data, inform nuc
       Serial.println("(state 4) Informing Nuc data transmission complete");

@@ -3,6 +3,7 @@
 #include <string>
 #include <stdlib.h>
 //#include "aro_ft/aro_ft.h"
+#include "aro_refactored/sample.h"
 #include <std_msgs/Empty.h>
 #include <std_msgs/Int32.h>
 #include <std_msgs/Float32.h>
@@ -21,24 +22,24 @@ private:
 	float desired_depth;    // ft
 	float sample_time;      // seconds
 	float current_torque;   // motor torque
-	bool use_torque;	// Use torque sensing
+	//bool use_torque;	// Use torque sensing
 
 	ros::ServiceClient dynamixel_client;
 	ros::Subscriber dynamixel_torque;
 
 public:
-	DynamixelClient(ros::NodeHandle &nh, float input_speed, float input_depth, float input_time, bool ut):
+	DynamixelClient(ros::NodeHandle &nh, float input_speed, float input_depth, float input_time):
 		nh_(nh),
 		reel_speed(input_speed),
 		desired_depth(input_depth),
 		sample_time(input_time),
 		current_torque(0),
-		use_torque(ut),
+		//use_torque(ut),
 		dynamixel_client(nh_.serviceClient<dynamixel_controllers::SetSpeed>("/reel_controller/set_speed")),
 		dynamixel_torque(nh_.subscribe("/reel_controller/state", 100, &DynamixelClient::updateTorque, this))
 	{}
 
-	void actuateDynamixel(float input_depth = 0.0) 
+	void actuateDynamixel(float input_depth /*= 0.0*/) 
 	{
 		dynamixel_controllers::SetSpeed temp_srv;
 		temp_srv.request.speed = -reel_speed;   // Negative speed lets out line
@@ -57,12 +58,12 @@ public:
 			dynamixel_client.call(temp_srv);        // Stop Sonde at desired Depth
 		}
 
-		if (desired_depth < 0) // goto bottom
+		if (desired_depth <= 0) // goto bottom using torque sensing
 		{
 			ROS_INFO("Lowering Sonde to bottom.");
 			dynamixel_client.call(temp_srv);
 			ros::Duration(2).sleep();
-			while (current_torque < 0.15)  // 0.15 chosen arbitrarily
+			while (current_torque < 0.15)  // 0.15 chosen arbitrarily, needs further tuning TODO 
 			{
 				ROS_INFO("Torque: %f", current_torque);
 				ros::spinOnce();
@@ -80,20 +81,23 @@ public:
 
 		//Raise for time:
 		dynamixel_client.call(temp_srv);       // Raise Sonde
-		//ros::Duration(duration).sleep();
+		
 		// give it a moment to reverse torque sign
+		ros::Duration(1.0).sleep();
 
-		//Raise until torque:
-		while (current_torque > -0.18)     // 0.8 chosen arbitrarily
+		//Raise until torque (we do this regardless of whether we used torque on the way down):
+		// Does this need a timeout in case reel slips? Don't want computer getting stuck TODO 
+		while (current_torque > -0.17)     //  chosen arbitrarily, needs further tuning TODO 
 		{
 			ROS_INFO("Torque: %f", current_torque);
 			ros::spinOnce();
 			ros::Duration(0.5).sleep();
 		}
 
-		//temp_srv.request.speed = 1;
-		//dynamixel_client.call(temp_srv);
-		//ros::Duration(3).sleep();
+		// Unreel a bit so not taught
+		temp_srv.request.speed = -1;
+		dynamixel_client.call(temp_srv);
+		ros::Duration(1.0).sleep();
 
 		temp_srv.request.speed = 0.0;
 		dynamixel_client.call(temp_srv);
@@ -167,7 +171,7 @@ public:
 		bag("collected_data.bag", rosbag::bagmode::Write),
 		STATE(0),
 		depth(0.0),
-		torque_sensing(false), // Change this here for now
+		torque_sensing(false), // not in use, publish on begin_collection with depth <=0.0 to use torque sensing
 		teensy_signal_count(0),
 		teensy_signal_confirmation_num(3),
 
@@ -179,7 +183,7 @@ public:
 		teensy_data_sub(nh.subscribe("teensy_data", 10, &CollectDataStateMachine::teensyDataCb, this)),
 		begin_collection_sub(nh.subscribe("begin_collection", 10, &CollectDataStateMachine::beginCollectionCb, this)),
 
-		dynamixel(nh_, 5.0, 0.0, 5.0, torque_sensing) // 3rd param "desired_depth" 0.0 by default for now
+		dynamixel(nh_, 5.0, 0.0, 5.0) // 3rd param "desired_depth" 0.0 by default for now
 
 	{
 		toTeensy.data = 0;
@@ -216,7 +220,7 @@ public:
 					// NOW RUN DYNAMIXEL METHOD TO MOVE REEL?? TODO 
 					// If so, you'll also change to STATE 3 after that happens, should that all be here?
 
-					dynamixel.actuateDynamixel();
+					dynamixel.actuateDynamixel(depth);
 
 					ROS_INFO("Switching to state 3");
 					STATE = 3;
