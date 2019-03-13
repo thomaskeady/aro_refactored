@@ -3,6 +3,7 @@
 #include <string>
 #include <stdlib.h>
 //#include "aro_ft/aro_ft.h"
+#include "aro_refactored/sample.h"
 #include <std_msgs/Empty.h>
 #include <std_msgs/Int32.h>
 #include <std_msgs/Float32.h>

@@ -17,14 +17,15 @@ ros::NodeHandle nh;
 
 // Messages
 std_msgs::Int32 sig; 
-std_msgs::Empty data_msg;
+//std_msgs::Empty data_msg;
+aro_refactored::sample data_msg;
 
 //aro_refactored:: data_msg; // Need to add custom messages here TODO
 //aro_ft::aro_ft buffMsg;
 //aro_ft::aro_ft msgArray[MAX_NUM_MSGS];
 
 // Message sizing parameters
-const int MAX_MSG_SIZE = 1; // Max # of messages that get sent at once, will make this bigger (currently for testing)
+const int MAX_MSG_SIZE = 2; // Max # of messages that get sent at once, will make this bigger (currently for testing)
 const int MAX_NUM_MSGS = 500; // Just so we can preallocate, can do this more smartly if necessary 
 
 aro_refactored::sample samples[MAX_NUM_MSGS];
@@ -187,13 +188,25 @@ void loop() {
     case 4 : 
       // Send data
       Serial.println("(state 4) Sending data");
-      teensy_data_pub.publish(&data_msg);
-      delay(50);
-      teensy_data_pub.publish(&data_msg);
-      delay(50);
-      teensy_data_pub.publish(&data_msg);
-      delay(50);
+      Serial.println(numMsgs);
+//      teensy_data_pub.publish(&data_msg);
+//      delay(50);
+//      teensy_data_pub.publish(&data_msg);
+//      delay(50);
+//      teensy_data_pub.publish(&data_msg);
+//      delay(50);
       // Dont forget to clear the data array!! TODO
+      for (int i = 0; i < numMsgs; ++i) 
+      {
+        Serial.print("Sending message ");
+        teensy_data_pub.publish(&samples[i]);
+        Serial.print("Sent message ");
+        Serial.println(i);
+      }
+      Serial.println("Clearing data");
+      //memset(samples, 0, sizeof(samples)); // This doesnt work, how overwrite old memory? Is necessary? TODO
+      numMsgs = 0;
+      currMsgSize = 0;
 
       // When done sending data, inform nuc
       Serial.println("(state 4) Informing Nuc data transmission complete");

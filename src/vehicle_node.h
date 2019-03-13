@@ -276,7 +276,7 @@ public:
 	}
 
 	// Need to change this to custom message type
-	void teensyDataCb(const std_msgs::Empty& msg)
+	void teensyDataCb(const aro_refactored::sample& msg)
 	{
 		ROS_INFO("Received data message from Teensy");
 	}
