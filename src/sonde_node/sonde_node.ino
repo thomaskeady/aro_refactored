@@ -111,112 +111,115 @@ void loop() {
   switch (STATE)
   {
     case 0 : 
-      // Idle state, put a non-busy wait here
-      Serial.println("(state 0) Chilling");
-      delay(500); 
-      
-      break;
+          // Idle state, put a non-busy wait here
+          Serial.println("(state 0) Chilling");
+          delay(500); 
+          
+          break;
     case 1 : 
-      // Sending heartbeats for testing comms
-      Serial.println("(state 1) Sending hb");
-      teensy_signal_pub.publish(&sig); // Change sig to something first? Value to indicate heartbeat? May help with debugging
-      delay(500);
-
-      break;
+          // Sending heartbeats for testing comms
+          Serial.println("(state 1) Sending hb");
+          teensy_signal_pub.publish(&sig); // Change sig to something first? Value to indicate heartbeat? May help with debugging
+          delay(500);
+    
+          break;
     case 2 : 
-      // Start collecting data! Repeat until another signal arrives 
-      //Serial.println("(state 2) Pretending to collect data brb");
-      //delay(250);
+          // Start collecting data! Repeat until another signal arrives 
+          //Serial.println("(state 2) Pretending to collect data brb");
+          //delay(250);
+          
+          // Tell Nuc that got signal
+          //teensy_signal_pub.publish(&sig); // Would have to distinguish between hb and ack, may not be necessary
+          
+          Serial2.write("?01,PVAL,,\r\n");
+          //rawString = Serial3.readString();
+          //rawString format: "=01,PVAL,24.173,271.62,"
       
-      Serial2.write("?01,PVAL,,\r\n");
-      //rawString = Serial3.readString();
-      //rawString format: "=01,PVAL,24.173,271.62,"
-  
-      // For testing without Sonde:
-      rawString = "=01,PVAL,24.173,271.62,";
-      delay(250); // Change this number to simulate smapling delay
-  
-      //bar30.read();
-      tempString = rawString.substring(9,15);
-      doString = rawString.substring(16,22);
-      temp = tempString.toFloat();
-      DO = doString.toFloat();
-  
-      //samples[numMsgs].stamp[currMsgSize++];
-      //samples[numMsgs].stamp.push_back(nh.now());   // Not a std container *eye roll*
-  
-      stampBuffer[currMsgSize] = nh.now();
-      dissolvedOxygenBuffer[currMsgSize] = DO;
-      waterTempBuffer[currMsgSize] = temp;
-      depthBuffer[currMsgSize] = 0;//bar30.depth();
-      ++currMsgSize;
-
-      if (currMsgSize == MAX_MSG_SIZE) 
-      {
-        Serial.println("Copying to message array, creating new message");
-        
-        currMsgSize = 0;
-        
-        // Now add them to the array of sample messages for the Nuc
-        samples[numMsgs].stamp = stampBuffer;
-        samples[numMsgs].dissolvedOxygen = dissolvedOxygenBuffer;
-        samples[numMsgs].waterTemp = waterTempBuffer;
-        samples[numMsgs].depth = depthBuffer;
-        // TODO will this add non-trivial delay to the sampling? Does that matter?
-        // TODO will these need to be cleared now?
-        
-        ++numMsgs;
-        
-        if (numMsgs == MAX_NUM_MSGS) 
-        {
-          //numMsgs = 0; // Too many samples, stop collecting and add something smart to keep ROS messaging working
-          Serial.println("************ \n\nUh oh! \n\n************");
-        }
+          // For testing without Sonde:
+          rawString = "=01,PVAL,24.173,271.62,";
+          delay(250); // Change this number to simulate smapling delay
       
-      }
-      Serial.println(numMsgs);
-
+          //bar30.read();
+          tempString = rawString.substring(9,15);
+          doString = rawString.substring(16,22);
+          temp = tempString.toFloat();
+          DO = doString.toFloat();
       
-      break;
+          //samples[numMsgs].stamp[currMsgSize++];
+          //samples[numMsgs].stamp.push_back(nh.now());   // Not a std container *eye roll*
+      
+          stampBuffer[currMsgSize] = nh.now();
+          dissolvedOxygenBuffer[currMsgSize] = DO;
+          waterTempBuffer[currMsgSize] = temp;
+          depthBuffer[currMsgSize] = 0;//bar30.depth();
+          ++currMsgSize;
+    
+          if (currMsgSize == MAX_MSG_SIZE) 
+          {
+            Serial.println("Copying to message array, creating new message");
+            
+            currMsgSize = 0;
+            
+            // Now add them to the array of sample messages for the Nuc
+            samples[numMsgs].stamp = stampBuffer;
+            samples[numMsgs].dissolvedOxygen = dissolvedOxygenBuffer;
+            samples[numMsgs].waterTemp = waterTempBuffer;
+            samples[numMsgs].depth = depthBuffer;
+            // TODO will this add non-trivial delay to the sampling? Does that matter?
+            // TODO will these need to be cleared now?
+            
+            ++numMsgs;
+            
+            if (numMsgs == MAX_NUM_MSGS) 
+            {
+              //numMsgs = 0; // Too many samples, stop collecting and add something smart to keep ROS messaging working
+              Serial.println("************ \n\nUh oh! \n\n************");
+            }
+          
+          }
+          Serial.println(numMsgs);
+    
+          
+          break;
     case 3 : 
-      // Sending heartbeats for testing comms
-      Serial.println("(state 3) Sending hb");
-      teensy_signal_pub.publish(&sig); // Change sig to something first? Value to indicate heartbeat? May help with debugging
-      delay(500);
-      
-      break;
+          // Sending heartbeats for testing comms
+          Serial.println("(state 3) Sending hb");
+          teensy_signal_pub.publish(&sig); // Change sig to something first? Value to indicate heartbeat? May help with debugging
+          delay(500);
+          
+          break;
     case 4 : 
-      // Send data
-      Serial.println("(state 4) Sending data");
-      Serial.println(numMsgs);
-//      teensy_data_pub.publish(&data_msg);
-//      delay(50);
-//      teensy_data_pub.publish(&data_msg);
-//      delay(50);
-//      teensy_data_pub.publish(&data_msg);
-//      delay(50);
-      // Dont forget to clear the data array!! TODO
-      ++numMsgs; // Because the last one isn't full but isnt empty either
-      for (int i = 0; i < numMsgs; ++i) 
-      {
-        Serial.print("Sending message ");
-        teensy_data_pub.publish(&samples[i]);
-        Serial.print("Sent message ");
-        Serial.println(i);
-      }
-      Serial.println("Clearing data");
-      //memset(samples, 0, sizeof(samples)); // This doesnt work, how overwrite old memory? Is necessary? TODO
-      numMsgs = 0;
-      currMsgSize = 0;
-
-      // When done sending data, inform nuc // Here safe to assume messages will go thru (?)
-      Serial.println("(state 4) Informing Nuc data transmission complete");
-      teensy_signal_pub.publish(&sig);
-
-      // Change own state back to 0 i guess? // Actually nuc does it too, is redundant, choose one TODO
-      Serial.println("(state 4) returning self to idle state");
-      STATE = 0;
-      break;
+          // Send data
+          Serial.println("(state 4) Sending data");
+          Serial.println(numMsgs);
+    //      teensy_data_pub.publish(&data_msg);
+    //      delay(50);
+    //      teensy_data_pub.publish(&data_msg);
+    //      delay(50);
+    //      teensy_data_pub.publish(&data_msg);
+    //      delay(50);
+          // Dont forget to clear the data array!! TODO
+          ++numMsgs; // Because the last one isn't full but isnt empty either
+          for (int i = 0; i < numMsgs; ++i) 
+          {
+            Serial.print("Sending message ");
+            teensy_data_pub.publish(&samples[i]);
+            Serial.print("Sent message ");
+            Serial.println(i);
+          }
+          Serial.println("Clearing data");
+          //memset(samples, 0, sizeof(samples)); // This doesnt work, how overwrite old memory? Is necessary? TODO
+          numMsgs = 0;
+          currMsgSize = 0;
+    
+          // When done sending data, inform nuc // Here safe to assume messages will go thru (?)
+          Serial.println("(state 4) Informing Nuc data transmission complete");
+          teensy_signal_pub.publish(&sig);
+    
+          // Change own state back to 0 i guess? // Actually nuc does it too, is redundant, choose one TODO
+          Serial.println("(state 4) returning self to idle state");
+          STATE = 0;
+          break;
       
   }
 
