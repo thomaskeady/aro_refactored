@@ -209,7 +209,7 @@ void loop() {
       numMsgs = 0;
       currMsgSize = 0;
 
-      // When done sending data, inform nuc
+      // When done sending data, inform nuc // Here safe to assume messages will go thru (?)
       Serial.println("(state 4) Informing Nuc data transmission complete");
       teensy_signal_pub.publish(&sig);
 

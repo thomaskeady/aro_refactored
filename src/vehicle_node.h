@@ -150,6 +150,8 @@ private:
 	bool torque_sensing;
 	int teensy_signal_count;
 	int teensy_signal_confirmation_num;
+	ros::Duration resend_wait; // How soon before resending if hear nothing from teensy
+	ros::Time last_msg_stamp; // Last time we heard from teensy
 
 	// Messages
 	std_msgs::Int32 toTeensy;
@@ -162,6 +164,7 @@ private:
 	ros::Subscriber teensy_data_sub;
 	ros::Subscriber begin_collection_sub;
 
+	
 	DynamixelClient dynamixel;
 
 
@@ -174,6 +177,7 @@ public:
 		torque_sensing(false), // not in use, publish on begin_collection with depth <=0.0 to use torque sensing
 		teensy_signal_count(0),
 		teensy_signal_confirmation_num(3),
+		resend_wait(ros::Duration(3)), // In seconds
 
 		// Publishers
 		teensy_state_pub(nh_.advertise<std_msgs::Int32>("teensy_state", 10)),
@@ -241,10 +245,15 @@ public:
 			case 3 :
 				// Here we want 3 signals before we consider comms good
 
+				// Note if its underwater it may not receive the teensy_state message - so try resending 
+				
+
+
 				// Once we get all 3 signals, change state and reset counter
 				if (teensy_signal_count < teensy_signal_confirmation_num) 
 				{
 					++teensy_signal_count;
+					//last_time_stamp = ros::Time::now();
 				}
 				else if (teensy_signal_count == teensy_signal_confirmation_num)
 				{
