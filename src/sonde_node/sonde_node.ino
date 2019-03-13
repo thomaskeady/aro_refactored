@@ -25,7 +25,7 @@ aro_refactored::sample data_msg;
 //aro_ft::aro_ft msgArray[MAX_NUM_MSGS];
 
 // Message sizing parameters
-const int MAX_MSG_SIZE = 2; // Max # of messages that get sent at once, will make this bigger (currently for testing)
+const int MAX_MSG_SIZE = 50; // Max # of messages that get sent at once, will make this bigger (currently for testing)
 const int MAX_NUM_MSGS = 500; // Just so we can preallocate, can do this more smartly if necessary 
 
 aro_refactored::sample samples[MAX_NUM_MSGS];
@@ -113,7 +113,7 @@ void loop() {
     case 0 : 
       // Idle state, put a non-busy wait here
       Serial.println("(state 0) Chilling");
-      delay(1000); 
+      delay(500); 
       
       break;
     case 1 : 
@@ -196,6 +196,7 @@ void loop() {
 //      teensy_data_pub.publish(&data_msg);
 //      delay(50);
       // Dont forget to clear the data array!! TODO
+      ++numMsgs; // Because the last one isn't full but isnt empty either
       for (int i = 0; i < numMsgs; ++i) 
       {
         Serial.print("Sending message ");
