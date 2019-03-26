@@ -132,14 +132,15 @@ void loop() {
           //teensy_signal_pub.publish(&sig); // Would have to distinguish between hb and ack, may not be necessary
           
           Serial2.write("?01,PVAL,,\r\n");
-          //rawString = Serial3.readString();
+          rawString = Serial3.readString();
           //rawString format: "=01,PVAL,24.173,271.62,"
+          Serial.println(rawString);
       
           // For testing without Sonde:
-          rawString = "=01,PVAL,24.173,271.62,";
-          delay(250); // Change this number to simulate smapling delay
+          //rawString = "=01,PVAL,24.173,271.62,";
+          //delay(250); // Change this number to simulate smapling delay
       
-          //bar30.read();
+          bar30.read();
           tempString = rawString.substring(9,15);
           doString = rawString.substring(16,22);
           temp = tempString.toFloat();
@@ -151,7 +152,18 @@ void loop() {
           stampBuffer[currMsgSize] = nh.now();
           dissolvedOxygenBuffer[currMsgSize] = DO;
           waterTempBuffer[currMsgSize] = temp;
-          depthBuffer[currMsgSize] = 0;//bar30.depth();
+          depthBuffer[currMsgSize] = bar30.depth();
+
+          // Added to see what these data are
+          /*Serial.println(stampBuffer[currMsgSize]);
+          Serial.println(dissolvedOxygenBuffer[currMsgSize]);
+          Serial.println(waterTempBuffer[currMsgSize]);
+          Serial.println(depthBuffer[currMsgSize]);*/
+          //Serial.println(nh.now());
+          /*Serial.println(DO);
+          Serial.println(temp);
+          Serial.println(bar30.depth());*/
+          // End printing          
           ++currMsgSize;
     
           if (currMsgSize == MAX_MSG_SIZE) 

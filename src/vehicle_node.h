@@ -232,7 +232,9 @@ public:
 					// NOW RUN DYNAMIXEL METHOD TO MOVE REEL?? TODO 
 					// If so, you'll also change to STATE 3 after that happens, should that all be here?
 
-					dynamixel.actuateDynamixel(depth);
+					//dynamixel.actuateDynamixel(depth);
+					// For testing just take a pause
+					ros::Duration(depth).sleep();
 
 					ROS_INFO("Switching to state 3");
 					STATE = 3;
@@ -298,6 +300,9 @@ public:
 	void teensyDataCb(const aro_refactored::sample& msg)
 	{
 		ROS_INFO("Received data message from Teensy");
+		// Using this post https://stackoverflow.com/questions/32709061/how-to-write-a-string-message-in-a-ros-bag-file-in-c
+		bag.write("/teensy_data", ros::Time::now(), msg);
+		ROS_INFO("Wrote to bag");
 	}
 
 	void resendTeensyStateCb(const ros::TimerEvent &) 

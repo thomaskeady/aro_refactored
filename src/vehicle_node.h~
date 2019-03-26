@@ -193,6 +193,7 @@ public:
 		dynamixel(nh_, 5.0, 0.0, 5.0) // 3rd param "desired_depth" 0.0 by default for now
 
 	{
+		ROS_INFO("Initializing");
 		resend_teensy_state.stop();
 		toTeensy.data = 0;
 		
@@ -297,6 +298,9 @@ public:
 	void teensyDataCb(const aro_refactored::sample& msg)
 	{
 		ROS_INFO("Received data message from Teensy");
+		// Using this post https://stackoverflow.com/questions/32709061/how-to-write-a-string-message-in-a-ros-bag-file-in-c
+		bag.write("/teensy_data", ros::Time::now(), msg);
+		ROS_INFO("Wrote to bag");
 	}
 
 	void resendTeensyStateCb(const ros::TimerEvent &) 
