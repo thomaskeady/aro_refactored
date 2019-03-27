@@ -57,9 +57,8 @@ ros::Publisher teensy_signal_pub("teensy_signal", &sig);
 ros::Publisher teensy_data_pub("teensy_data", &data_msg);
 
 // Subscribers
+
 ros::Subscriber<std_msgs::Int32> teensy_state_sub("teensy_state", &teensyStateCb);
-
-
 
 //int STATE; // So that its nonvolatile? Are callbacks interrupts? - they arent, entered when spin is called
 int msg_count;
@@ -132,8 +131,10 @@ void loop() {
           //teensy_signal_pub.publish(&sig); // Would have to distinguish between hb and ack, may not be necessary
           
           Serial2.write("?01,PVAL,,\r\n");
-          rawString = Serial3.readString();
+          //nh.spinOnce();
+          rawString = Serial2.readString();
           //rawString format: "=01,PVAL,24.173,271.62,"
+          //nh.spinOnce(); 
           Serial.println(rawString);
       
           // For testing without Sonde:
@@ -160,9 +161,11 @@ void loop() {
           Serial.println(waterTempBuffer[currMsgSize]);
           Serial.println(depthBuffer[currMsgSize]);*/
           //Serial.println(nh.now());
-          /*Serial.println(DO);
-          Serial.println(temp);
-          Serial.println(bar30.depth());*/
+          Serial.print(DO);
+          Serial.print("\t");
+          Serial.print(temp);
+          Serial.print("\t");
+          Serial.println(bar30.depth());
           // End printing          
           ++currMsgSize;
     
@@ -189,7 +192,7 @@ void loop() {
             }
           
           }
-          Serial.println(numMsgs);
+          //Serial.println(numMsgs);
     
           
           break;

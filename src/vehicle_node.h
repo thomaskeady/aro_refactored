@@ -179,16 +179,16 @@ public:
 		torque_sensing(false), // not in use, publish on begin_collection with depth <=0.0 to use torque sensing
 		teensy_signal_count(0),
 		teensy_signal_confirmation_num(3),
-		resend_wait(ros::Duration(3)), // In seconds
-		resend_teensy_state(nh.createTimer(ros::Duration(3), &CollectDataStateMachine::resendTeensyStateCb, this)),
+		resend_wait(ros::Duration(1)), // In seconds
+		resend_teensy_state(nh.createTimer(ros::Duration(1), &CollectDataStateMachine::resendTeensyStateCb, this)),
 
 		// Publishers
-		teensy_state_pub(nh_.advertise<std_msgs::Int32>("teensy_state", 10)),
+		teensy_state_pub(nh_.advertise<std_msgs::Int32>("teensy_state", 100)),
 
 		// Subscribers
-		teensy_signal_sub(nh_.subscribe("teensy_signal", 10, &CollectDataStateMachine::teensySignalCb, this)),
-		teensy_data_sub(nh.subscribe("teensy_data", 10, &CollectDataStateMachine::teensyDataCb, this)),
-		begin_collection_sub(nh.subscribe("begin_collection", 10, &CollectDataStateMachine::beginCollectionCb, this)),
+		teensy_signal_sub(nh_.subscribe("teensy_signal", 100, &CollectDataStateMachine::teensySignalCb, this)),
+		teensy_data_sub(nh.subscribe("teensy_data", 100, &CollectDataStateMachine::teensyDataCb, this)),
+		begin_collection_sub(nh.subscribe("begin_collection", 100, &CollectDataStateMachine::beginCollectionCb, this)),
 
 		dynamixel(nh_, 5.0, 0.0, 5.0) // 3rd param "desired_depth" 0.0 by default for now
 
