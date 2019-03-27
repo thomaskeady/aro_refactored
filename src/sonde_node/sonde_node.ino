@@ -74,6 +74,8 @@ int msg_count;
 MS5837 bar30;
 
 void setup() {
+
+  delay(500);
   
   nh.getHardware()->configureHardware(&Serial3, 9600);  //Using 9600 baud rate
   nh.initNode();
@@ -110,44 +112,36 @@ void setup() {
   //float timeForFile = float(nh.now().to_string());
   // Convert this to date time format? Just use numbers for now
 
-  /*
-  if (!card.init(SPI_HALF_SPEED, chipSelect)) {
-    Serial.println("initialization failed. Things to check:");
-    Serial.println("* is a card inserted?");
-    Serial.println("* is your wiring correct?");
-    Serial.println("* did you change the chipSelect pin to match your shield or module?");
-    return;
-  } else {
-   Serial.println("Wiring is correct and a card is present."); 
-  }
-
-  if (!volume.init(card)) {
-    Serial.println("Could not find FAT16/FAT32 partition.\nMake sure you've formatted the card");
-    return;
-  }
-  
-  Serial.println("\nFiles found on the card (name, date and size in bytes): ");
-  root.openRoot(volume);
-  
-  // list all files in the card with date and size
-  root.ls(LS_R | LS_DATE | LS_SIZE);
-  */
-
-  Serial.println(" About to search for files");
+  int fileNum = 0;
   File root = SD.open("/");
   root.rewindDirectory();
-  // Loop through files looking for largest one
+  // Loop through files looking for largest one (all plaintext but no extension)
   while (true) {
     File entry = root.openNextFile();
     if (!entry) {
       Serial.println("No more files!");
       break;
     }
-    String entryName = (String) entry.name();
-    Serial.println("File: " + entryName);
+    int entryNum = ((String)entry.name()).toInt();
+    Serial.println("File: " + (String)entryNum);
+    if (entryNum > fileNum) {
+      fileNum = entryNum;
+    }
     entry.close();
   }
   root.close();
+  // Now need to make the next file 
+
+  fileNum++;
+  
+  char next[4]; // Make bigger if we think we will get more than this many files on SD card TODO
+  //next = (char*) &fileNum;
+  itoa(fileNum, next, 10);
+  Serial.println(fileNum);
+  Serial.println(next);
+  //myFile = SD.open((const char*)fileNum, FILE_WRITE);
+  myFile = SD.open(next, FILE_WRITE);
+
   
 }
 
@@ -155,6 +149,7 @@ void setup() {
 String rawString;
 float temp;
 float DO;
+float depth;
 String tempString;
 String doString;
 
@@ -163,6 +158,9 @@ void loop() {
   // put your main code here, to run repeatedly:
 
   nh.spinOnce(); // This is where STATE will be updated
+
+  //myFile.println("test");
+  //myFile.flush();
 
   switch (STATE)
   {
@@ -203,14 +201,15 @@ void loop() {
           doString = rawString.substring(16,22);
           temp = tempString.toFloat();
           DO = doString.toFloat();
-      
+          depth = bar30.depth();
+          
           //samples[numMsgs].stamp[currMsgSize++];
           //samples[numMsgs].stamp.push_back(nh.now());   // Not a std container *eye roll*
       
           stampBuffer[currMsgSize] = nh.now();
           dissolvedOxygenBuffer[currMsgSize] = DO;
           waterTempBuffer[currMsgSize] = temp;
-          depthBuffer[currMsgSize] = bar30.depth();
+          depthBuffer[currMsgSize] = depth;
 
           // Added to see what these data are
           /*Serial.println(stampBuffer[currMsgSize]);
@@ -222,8 +221,12 @@ void loop() {
           Serial.print("\t");
           Serial.print(temp);
           Serial.print("\t");
-          Serial.println(bar30.depth());
+          Serial.println(depth);
           // End printing          
+
+          myFile.println((String)DO + "\t" + (String)temp + "\t" + (String)depth);
+          myFile.flush();
+          
           ++currMsgSize;
     
           if (currMsgSize == MAX_MSG_SIZE) 
@@ -283,6 +286,9 @@ void loop() {
           //memset(samples, 0, sizeof(samples)); // This doesnt work, how overwrite old memory? Is necessary? TODO
           numMsgs = 0;
           currMsgSize = 0;
+
+          myFile.println("End sample");
+          myFile.flush();
     
           // When done sending data, inform nuc // Here safe to assume messages will go thru (?)
           Serial.println("(state 4) Informing Nuc data transmission complete");

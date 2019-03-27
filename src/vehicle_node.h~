@@ -180,7 +180,7 @@ public:
 		teensy_signal_count(0),
 		teensy_signal_confirmation_num(3),
 		resend_wait(ros::Duration(1)), // In seconds
-		resend_teensy_state(nh.createTimer(ros::Duration(3), &CollectDataStateMachine::resendTeensyStateCb, this)),
+		resend_teensy_state(nh.createTimer(ros::Duration(1), &CollectDataStateMachine::resendTeensyStateCb, this)),
 
 		// Publishers
 		teensy_state_pub(nh_.advertise<std_msgs::Int32>("teensy_state", 100)),

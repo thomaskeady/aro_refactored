@@ -327,6 +327,7 @@ public:
 		} else {
 			ROS_WARN("STATE is %d, not changing", STATE);
 			// Anything else?
+			// TODO maybe resend state switch just cause?
 		}
 		
 	}
