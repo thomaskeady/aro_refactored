@@ -206,11 +206,20 @@ void loop() {
           //samples[numMsgs].stamp[currMsgSize++];
           //samples[numMsgs].stamp.push_back(nh.now());   // Not a std container *eye roll*
       
-          stampBuffer[currMsgSize] = nh.now();
-          dissolvedOxygenBuffer[currMsgSize] = DO;
-          waterTempBuffer[currMsgSize] = temp;
-          depthBuffer[currMsgSize] = depth;
-
+//          stampBuffer[currMsgSize] = nh.now();
+//          dissolvedOxygenBuffer[currMsgSize] = DO;
+//          waterTempBuffer[currMsgSize] = temp;
+//          depthBuffer[currMsgSize] = depth;
+          Serial.println("Before");
+          //*samples[numMsgs].stamp[currMsgSize]  = nh.now();
+          Serial.println("Before");
+          samples[numMsgs].dissolvedOxygen[currMsgSize]  = DO;
+          Serial.println("Before");
+          samples[numMsgs].waterTemp[currMsgSize]  = temp;
+          Serial.println("Before");
+          samples[numMsgs].depth[currMsgSize]  = depth;
+          Serial.println("After");
+          
           // Added to see what these data are
           /*Serial.println(stampBuffer[currMsgSize]);
           Serial.println(dissolvedOxygenBuffer[currMsgSize]);
@@ -236,10 +245,10 @@ void loop() {
             currMsgSize = 0;
             
             // Now add them to the array of sample messages for the Nuc
-            samples[numMsgs].stamp = stampBuffer;
-            samples[numMsgs].dissolvedOxygen = dissolvedOxygenBuffer;
-            samples[numMsgs].waterTemp = waterTempBuffer;
-            samples[numMsgs].depth = depthBuffer;
+            //samples[numMsgs].stamp = stampBuffer;
+            //samples[numMsgs].dissolvedOxygen = dissolvedOxygenBuffer;
+            //samples[numMsgs].waterTemp = waterTempBuffer;
+            //samples[numMsgs].depth = depthBuffer;
             // TODO will this add non-trivial delay to the sampling? Does that matter?
             // TODO will these need to be cleared now?
             
@@ -267,7 +276,7 @@ void loop() {
           // Send data
           Serial.println("(state 4) Sending data");
           Serial.println(numMsgs);
-          Serial.println(*samples[0].dissolvedOxygen);
+          //Serial.println(samples[0].dissolvedOxygen);
           // Dont forget to clear the data array!! TODO
           ++numMsgs; // Because the last one isn't full but isnt empty either
           for (int i = 0; i < numMsgs; ++i) 
