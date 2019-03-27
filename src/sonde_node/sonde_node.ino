@@ -13,6 +13,14 @@
 #include <aro_refactored/sample.h>
 
 
+#include <SD.h>
+#include <SPI.h>
+File myFile;
+const int chipSelect = BUILTIN_SDCARD;
+Sd2Card card;
+SdVolume volume;
+SdFile root;
+
 ros::NodeHandle nh;
 
 // Messages
@@ -91,6 +99,55 @@ void setup() {
   Serial2.begin(38400); // Sonde
 
   Serial.begin(9600); // Arduino serial monitor
+
+  // Setting up SD card
+  if (!SD.begin(chipSelect)) {
+    Serial.println("SD initialization failed!");
+    return;
+  }
+  Serial.println("SD initialization done.");
+
+  //float timeForFile = float(nh.now().to_string());
+  // Convert this to date time format? Just use numbers for now
+
+  /*
+  if (!card.init(SPI_HALF_SPEED, chipSelect)) {
+    Serial.println("initialization failed. Things to check:");
+    Serial.println("* is a card inserted?");
+    Serial.println("* is your wiring correct?");
+    Serial.println("* did you change the chipSelect pin to match your shield or module?");
+    return;
+  } else {
+   Serial.println("Wiring is correct and a card is present."); 
+  }
+
+  if (!volume.init(card)) {
+    Serial.println("Could not find FAT16/FAT32 partition.\nMake sure you've formatted the card");
+    return;
+  }
+  
+  Serial.println("\nFiles found on the card (name, date and size in bytes): ");
+  root.openRoot(volume);
+  
+  // list all files in the card with date and size
+  root.ls(LS_R | LS_DATE | LS_SIZE);
+  */
+
+  Serial.println(" About to search for files");
+  File root = SD.open("/");
+  root.rewindDirectory();
+  // Loop through files looking for largest one
+  while (true) {
+    File entry = root.openNextFile();
+    if (!entry) {
+      Serial.println("No more files!");
+      break;
+    }
+    String entryName = (String) entry.name();
+    Serial.println("File: " + entryName);
+    entry.close();
+  }
+  root.close();
   
 }
 
