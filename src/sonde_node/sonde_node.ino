@@ -217,11 +217,11 @@ void loop() {
           Serial.println(waterTempBuffer[currMsgSize]);
           Serial.println(depthBuffer[currMsgSize]);*/
           //Serial.println(nh.now());
-          Serial.print(DO);
+          /*Serial.print(DO);
           Serial.print("\t");
           Serial.print(temp);
           Serial.print("\t");
-          Serial.println(depth);
+          Serial.println(depth);*/
           // End printing          
 
           myFile.println((String)DO + "\t" + (String)temp + "\t" + (String)depth);
@@ -267,12 +267,7 @@ void loop() {
           // Send data
           Serial.println("(state 4) Sending data");
           Serial.println(numMsgs);
-    //      teensy_data_pub.publish(&data_msg);
-    //      delay(50);
-    //      teensy_data_pub.publish(&data_msg);
-    //      delay(50);
-    //      teensy_data_pub.publish(&data_msg);
-    //      delay(50);
+          Serial.println(*samples[0].dissolvedOxygen);
           // Dont forget to clear the data array!! TODO
           ++numMsgs; // Because the last one isn't full but isnt empty either
           for (int i = 0; i < numMsgs; ++i) 

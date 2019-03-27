@@ -302,6 +302,10 @@ public:
 		ROS_INFO("Received data message from Teensy");
 		// Using this post https://stackoverflow.com/questions/32709061/how-to-write-a-string-message-in-a-ros-bag-file-in-c
 		bag.write("/teensy_data", ros::Time::now(), msg);
+		ROS_INFO("Num of samples in msg: %d", msg.dissolvedOxygen.size());
+		for (int i = 0; i < msg.dissolvedOxygen.size(); ++i) {
+			ROS_INFO("%f\t%f\t%f", msg.dissolvedOxygen[i]);
+		}
 		ROS_INFO("Wrote to bag");
 	}
 
