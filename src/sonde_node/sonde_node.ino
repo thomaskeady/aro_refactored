@@ -73,6 +73,10 @@ int msg_count;
 
 MS5837 bar30;
 
+
+
+
+double secs;
 void setup() {
 
   delay(500);
@@ -111,6 +115,7 @@ void setup() {
 
   //float timeForFile = float(nh.now().to_string());
   // Convert this to date time format? Just use numbers for now
+  secs = nh.now().toSec();
 
   int fileNum = 0;
   File root = SD.open("/");
@@ -147,6 +152,7 @@ void setup() {
 
 
 String rawString;
+//double secs;
 float temp;
 float DO;
 float depth;
@@ -211,7 +217,7 @@ void loop() {
 //          waterTempBuffer[currMsgSize] = temp;
 //          depthBuffer[currMsgSize] = depth;
           Serial.println("Before");
-          //*samples[numMsgs].stamp[currMsgSize]  = nh.now();
+          samples[numMsgs].stamp[currMsgSize]  = nh.now();
           Serial.println("Before");
           samples[numMsgs].dissolvedOxygen[currMsgSize]  = DO;
           Serial.println("Before");
@@ -233,7 +239,10 @@ void loop() {
           Serial.println(depth);*/
           // End printing          
 
-          myFile.println((String)DO + "\t" + (String)temp + "\t" + (String)depth);
+          secs = nh.now().toSec();
+          //myFile.println((String)secs + "\t" + (String)DO + "\t" + (String)temp + "\t" + (String)depth);
+          Serial.println((String)secs + "\t" + (String)DO + "\t" + (String)temp + "\t" + (String)depth);
+          //myFile.println((String)DO + "\t" + (String)temp + "\t" + (String)depth);
           myFile.flush();
           
           ++currMsgSize;
