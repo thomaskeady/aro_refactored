@@ -26,15 +26,16 @@ ros::NodeHandle nh;
 // Messages
 std_msgs::Int32 sig; 
 //std_msgs::Empty data_msg;
-aro_refactored::sample data_msg;
+aro_refactored::sample toSend;
 
 //aro_refactored:: data_msg; // Need to add custom messages here TODO
 //aro_ft::aro_ft buffMsg;
 //aro_ft::aro_ft msgArray[MAX_NUM_MSGS];
 
 // Message sizing parameters
-const int MAX_MSG_SIZE = 50; // Max # of messages that get sent at once, will make this bigger (currently for testing)
-const int MAX_NUM_MSGS = 500; // Just so we can preallocate, can do this more smartly if necessary 
+const int MAX_MSG_SIZE = 5; // Max # of messages that get sent at once, will make this bigger (currently for testing)
+const int MAX_NUM_MSGS = 50; // Just so we can preallocate, can do this more smartly if necessary 
+
 
 aro_refactored::sample samples[MAX_NUM_MSGS];
 int currMsgSize = 0;
@@ -45,7 +46,10 @@ float dissolvedOxygenBuffer[MAX_NUM_MSGS][MAX_MSG_SIZE];
 float waterTempBuffer[MAX_NUM_MSGS][MAX_MSG_SIZE];
 float depthBuffer[MAX_NUM_MSGS][MAX_MSG_SIZE];
 
-aro_refactored::sample toSend;
+//float fixed[] = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0};
+float fixed[] = {1.0, 2.0, 3.0, 4.0, 5.0};
+
+
 
 
 int STATE;
@@ -65,7 +69,7 @@ void teensyStateCb (const std_msgs::Int32& newState)
 
 // Publishers
 ros::Publisher teensy_signal_pub("teensy_signal", &sig);
-ros::Publisher teensy_data_pub("teensy_data", &data_msg);
+ros::Publisher teensy_data_pub("teensy_data", &toSend);
 
 // Subscribers
 
@@ -145,7 +149,11 @@ void setup() {
   //myFile = SD.open((const char*)fileNum, FILE_WRITE);
   myFile = SD.open(next, FILE_WRITE);
 
-  
+    
+  toSend.stamp_length = MAX_MSG_SIZE;
+  toSend.dissolvedOxygen_length = MAX_MSG_SIZE;
+  toSend.waterTemp_length = MAX_MSG_SIZE;
+  toSend.depth_length = MAX_MSG_SIZE;
 }
 
 
@@ -290,20 +298,24 @@ void loop() {
             //teensy_data_pub.publish(&samples[i]);
 
             toSend.stamp = stampBuffer[i];
-            toSend.dissolvedOxygen = dissolvedOxygenBuffer[i];
+            /*toSend.dissolvedOxygen = dissolvedOxygenBuffer[i];
             toSend.waterTemp = waterTempBuffer[i];
-            toSend.depth = depthBuffer[i];
+            toSend.depth = depthBuffer[i];*/
+            toSend.dissolvedOxygen = fixed;
+            toSend.waterTemp = fixed;
+            toSend.depth = fixed;
             
             
             teensy_data_pub.publish(&toSend);
             Serial.print("Sent message ");
             Serial.println(i);
             Serial.println("Printing contents");
-            /*for (int j = 0; j < MAX_MSG_SIZE; ++j) 
+            for (int j = 0; j < MAX_MSG_SIZE; ++j) 
             {
-              Serial.print((String)samples[i].stamp[j].toSec() + "\t");
+              //Serial.print((String)samples[i].stamp[j].toSec() + "\t");
+              Serial.print((String)toSend.depth[j] + "\t");
             }
-            Serial.println();*/
+            Serial.println();
           }
           Serial.println("Clearing data"); // TODO TODO TODO 
           //memset(samples, 0, sizeof(samples)); // This doesnt work, how overwrite old memory? Is necessary? TODO

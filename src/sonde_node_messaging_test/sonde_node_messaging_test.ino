@@ -101,6 +101,7 @@ void setup() {
   Serial.println("Before");
   //test.stamp = stampBuffer; // THIS WORKS
   //test.stamp = samples[0].stamp; // SO DOES THIS
+
   Serial.println("After");
 }
 
