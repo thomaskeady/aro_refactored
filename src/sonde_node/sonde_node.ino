@@ -33,6 +33,7 @@ aro_refactored::sample toSend;
 //aro_ft::aro_ft msgArray[MAX_NUM_MSGS];
 
 // Message sizing parameters
+// MAX_MSG_SIZE works at 5, fails at 25, BST time. Can also expand buffer (think limit is on Nuc side tho? see serial_node.py)
 const int MAX_MSG_SIZE = 5; // Max # of messages that get sent at once, will make this bigger (currently for testing)
 const int MAX_NUM_MSGS = 50; // Just so we can preallocate, can do this more smartly if necessary 
 
@@ -47,7 +48,7 @@ float waterTempBuffer[MAX_NUM_MSGS][MAX_MSG_SIZE];
 float depthBuffer[MAX_NUM_MSGS][MAX_MSG_SIZE];
 
 //float fixed[] = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0};
-float fixed[] = {1.0, 2.0, 3.0, 4.0, 5.0};
+//float fixed[] = {1.0, 2.0, 3.0, 4.0, 5.0};
 
 
 
@@ -298,12 +299,12 @@ void loop() {
             //teensy_data_pub.publish(&samples[i]);
 
             toSend.stamp = stampBuffer[i];
-            /*toSend.dissolvedOxygen = dissolvedOxygenBuffer[i];
+            toSend.dissolvedOxygen = dissolvedOxygenBuffer[i];
             toSend.waterTemp = waterTempBuffer[i];
-            toSend.depth = depthBuffer[i];*/
-            toSend.dissolvedOxygen = fixed;
+            toSend.depth = depthBuffer[i];
+            /*toSend.dissolvedOxygen = fixed;
             toSend.waterTemp = fixed;
-            toSend.depth = fixed;
+            toSend.depth = fixed;*/
             
             
             teensy_data_pub.publish(&toSend);

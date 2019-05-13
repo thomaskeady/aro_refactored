@@ -9,6 +9,7 @@
 #include <std_msgs/Float32.h>
 #include "dynamixel_controllers/SetSpeed.h"
 #include "dynamixel_msgs/JointState.h"
+#include <fstream>
 
 
 class DynamixelClient {
@@ -23,18 +24,20 @@ private:
 	float sample_time;      // seconds
 	float current_torque;   // motor torque
 	//bool use_torque;	// Use torque sensing
+    float torque_stopping;
 
 	ros::ServiceClient dynamixel_client;
 	ros::Subscriber dynamixel_torque;
 
 public:
-	DynamixelClient(ros::NodeHandle &nh, float input_speed, float input_depth, float input_time):
+	DynamixelClient(ros::NodeHandle &nh, float input_speed, float input_depth, float input_time, bool torque_stopping):
 		nh_(nh),
 		reel_speed(input_speed),
 		desired_depth(input_depth),
 		sample_time(input_time),
 		current_torque(0),
 		//use_torque(ut),
+        torque_stopping(torque_stopping),
 		dynamixel_client(nh_.serviceClient<dynamixel_controllers::SetSpeed>("/reel_controller/set_speed")),
 		dynamixel_torque(nh_.subscribe("/reel_controller/state", 100, &DynamixelClient::updateTorque, this))
 	{}
@@ -46,10 +49,10 @@ public:
 
 		desired_depth = input_depth;
 
+	    float duration = desired_depth / (reel_speed * 0.05);  // reel radius ~0.05ft
+
 		if (desired_depth > 0)  // goto depth
 		{
-			float duration = desired_depth / (reel_speed * 0.05);  // reel radius ~0.05ft
-
 			ROS_INFO("Lowering Sonde to %f depth", desired_depth);
 			dynamixel_client.call(temp_srv);
 			ros::Duration(duration).sleep();        // Lower Sonde to desired depth
@@ -62,7 +65,7 @@ public:
 		{
 			ROS_INFO("Lowering Sonde to bottom.");
 			dynamixel_client.call(temp_srv);
-			ros::Duration(2).sleep();
+			ros::Duration(2).sleep(); // This magic number will need to be set based on distance above water 
 			while (current_torque < 0.15)  // 0.15 chosen arbitrarily, needs further tuning TODO 
 			{
 				ROS_INFO("Torque: %f", current_torque);
@@ -76,29 +79,61 @@ public:
 		ROS_INFO("Sonde lowered, sampling at specified depth.");
 		ros::Duration(sample_time).sleep();     // Let Sonde sample at desired depth
 
-		ROS_INFO("Raising Sonde.");
+		char* plsjustprint = "";
+		if (torque_stopping) 
+		{
+			plsjustprint = "true";
+		}
+		else 
+		{
+			plsjustprint = "false";
+		}
+		//ROS_INFO("Raising Sonde (torque_stopping = %d)", (torque_stopping : 1 ? 0));
+		ROS_INFO("Raising Sonde (torque_stopping = %s)", plsjustprint);
+
+		/*
+		int plsjustprint = "";
+		if (torque_stopping) 
+		{
+			plsjustprint = 1;
+		}
+		else 
+		{
+			plsjustprint = 0;
+		}
+		ROS_INFO("Raising Sonde (torque_stopping = %d)", plsjustprint);
+		*/
+		//Raise for time:
+
 		temp_srv.request.speed = reel_speed;   // Positive speed reels line in
 
-		//Raise for time:
 		dynamixel_client.call(temp_srv);       // Raise Sonde
 		
-		// give it a moment to reverse torque sign
-		ros::Duration(1.0).sleep();
-
-		//Raise until torque (we do this regardless of whether we used torque on the way down):
-		// Does this need a timeout in case reel slips? Don't want computer getting stuck TODO 
-		while (current_torque > -0.17)     //  chosen arbitrarily, needs further tuning TODO 
+		if (torque_stopping) 
 		{
-			ROS_INFO("Torque: %f", current_torque);
-			ros::spinOnce();
+			// give it a moment to reverse torque sign
 			ros::Duration(0.5).sleep();
+
+			//Raise until torque (we do this regardless of whether we used torque on the way down):
+			// Does this need a timeout in case reel slips? Don't want computer getting stuck TODO 
+			while (current_torque > -0.17)     //  chosen arbitrarily, needs further tuning TODO 
+			{
+				ROS_INFO("Torque: %f", current_torque);
+				ros::spinOnce();
+				ros::Duration(0.5).sleep();
+			}
+
+			// Unreel a bit so not taught
+			temp_srv.request.speed = -1;
+			dynamixel_client.call(temp_srv);
+			ros::Duration(1.0).sleep();
+
+		} 
+		else 
+		{
+			ros::Duration(duration).sleep();     // Sleep while reeling up
 		}
-
-		// Unreel a bit so not taught
-		temp_srv.request.speed = -1;
-		dynamixel_client.call(temp_srv);
-		ros::Duration(1.0).sleep();
-
+		
 		temp_srv.request.speed = 0.0;
 		dynamixel_client.call(temp_srv);
 	}
@@ -147,13 +182,14 @@ private:
 	rosbag::Bag bag;
 	int STATE;
 	float depth;
-	bool torque_sensing;
+	bool torque_sensing; // on the way down
+	bool torque_stopping; // on the way up
 	int teensy_signal_count;
 	int teensy_signal_confirmation_num;
 	ros::Duration resend_wait; // How soon before resending if hear nothing from teensy
 	ros::Time last_msg_stamp; // Last time we heard from teensy
 	ros::Timer resend_teensy_state;
-
+	std::ofstream outfile; // Write data to here
 
 	// Messages
 	std_msgs::Int32 toTeensy;
@@ -177,6 +213,7 @@ public:
 		STATE(0),
 		depth(0.0),
 		torque_sensing(false), // not in use, publish on begin_collection with depth <=0.0 to use torque sensing
+		torque_stopping(true),
 		teensy_signal_count(0),
 		teensy_signal_confirmation_num(3),
 		resend_wait(ros::Duration(1)), // In seconds
@@ -190,13 +227,22 @@ public:
 		teensy_data_sub(nh.subscribe("teensy_data", 100, &CollectDataStateMachine::teensyDataCb, this)),
 		begin_collection_sub(nh.subscribe("begin_collection", 100, &CollectDataStateMachine::beginCollectionCb, this)),
 
-		dynamixel(nh_, 5.0, 0.0, 5.0) // 3rd param "desired_depth" 0.0 by default for now
+		dynamixel(nh_, 5.0, 0.0, 5.0, torque_stopping) // 3rd param "desired_depth" 0.0 by default for now
 
 	{
 		ROS_INFO("Initializing");
 		resend_teensy_state.stop();
 		toTeensy.data = 0;
 		
+
+		time_t t = time(0);   // Make ROS time instead?
+		struct tm * now = localtime( & t );
+
+		char buffer [80];
+		strftime(buffer,100,"/home/neil/catkin_ws/src/aro_refactored/data/data_%Y-%m-%d_%H-%M-%S.txt",now);
+		outfile.open(buffer);
+		ROS_INFO("Opened file");
+   		//myfile.close(); // Do we need to find a place to put this when the roscore is killed? TODO
 	}
 	
 	/* How we hear back from the teensy
@@ -232,7 +278,7 @@ public:
 					// NOW RUN DYNAMIXEL METHOD TO MOVE REEL?? TODO 
 					// If so, you'll also change to STATE 3 after that happens, should that all be here?
 
-					//dynamixel.actuateDynamixel(depth);
+					dynamixel.actuateDynamixel(depth);
 					// For testing just take a pause
 					ros::Duration(depth).sleep();
 
@@ -303,10 +349,15 @@ public:
 		// Using this post https://stackoverflow.com/questions/32709061/how-to-write-a-string-message-in-a-ros-bag-file-in-c
 		bag.write("/teensy_data", ros::Time::now(), msg);
 		ROS_INFO("Num of samples in msg: %d", msg.dissolvedOxygen.size());
-		for (int i = 0; i < msg.dissolvedOxygen.size(); ++i) {
-			ROS_INFO("%f\t%f\t%f", msg.dissolvedOxygen[i]);
-		}
+		//for (int i = 0; i < msg.dissolvedOxygen.size(); ++i) {
+		//	ROS_INFO("%f\t%f\t%f", msg.dissolvedOxygen[i]);
+		//}
 		ROS_INFO("Wrote to bag");
+
+		// Write to text file instead
+		// *************************************** TODO TODO TODO ***************************************
+
+
 	}
 
 	void resendTeensyStateCb(const ros::TimerEvent &) 
