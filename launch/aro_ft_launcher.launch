@@ -4,7 +4,7 @@
             namespace: dxl_manager
             serial_ports:
                 reel_port:
-                    port_name: "/dev/ttyUSB1"
+                    port_name: "/dev/ttyUSB1" <!-- use dev/serial/by-id/??? instead!! -->
                     baud_rate: 57600
                     min_motor_id: 1
                     max_motor_id: 3
@@ -20,5 +20,15 @@
                 reel_controller"
           output="screen"/>
 
+    <!-- Start serial node for USB radio-->
+    <node name="serial_radio" pkg="rosserial_python" type="serial_node.py"
+          args="_port:= ### PUT dev/serial/by-id/ HERE ###
+                _baud:=9600"
+          output="screen" />
+    
+    <!-- Start vehicle_node -->
+    <node name="vehicle_node" pkg="aro_refactored" type="vehicle_node"/>
+    
+    
 </launch>
 
