@@ -213,7 +213,7 @@ public:
 		STATE(0),
 		depth(0.0),
 		torque_sensing(false), // not in use, publish on begin_collection with depth <=0.0 to use torque sensing
-		torque_stopping(true),
+		torque_stopping(false),
 		teensy_signal_count(0),
 		teensy_signal_confirmation_num(3),
 		resend_wait(ros::Duration(1)), // In seconds
